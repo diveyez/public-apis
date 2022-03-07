@@ -20,7 +20,7 @@ num_segments = 5
 
 errors = []
 title_links = []
-anchor_re = re.compile(anchor + '\s(.+)')
+anchor_re = re.compile(f'{anchor}\\s(.+)')
 section_title_re = re.compile('\*\s\[(.*)\]')
 link_re = re.compile('\[(.+)\]\((http.*)\)')
 
@@ -46,8 +46,7 @@ def check_alphabetical(lines):
         if not line.startswith('|') or line.startswith('|---'):
             continue
         raw_title = [x.strip() for x in line.split('|')[1:-1]][0]
-        title_re_match = link_re.match(raw_title)
-        if title_re_match:
+        if title_re_match := link_re.match(raw_title):
             sections[category].append(title_re_match.group(1).upper())
 
     for category, entries in sections.items():
@@ -58,15 +57,13 @@ def check_alphabetical(lines):
 def check_entry(line_num, segments):
     # START Title
     raw_title = segments[index_title]
-    title_re_match = link_re.match(raw_title)
-    # url should be wrapped in '[TITLE](LINK)' Markdown syntax
-    if not title_re_match:
-        add_error(line_num, 'Title syntax should be "[TITLE](LINK)"')
-    else:
+    if title_re_match := link_re.match(raw_title):
         # do not allow "... API" in the entry title
         title = title_re_match.group(1)
         if title.upper().endswith(' API'):
             add_error(line_num, 'Title should not end with "... API". Every entry is an API here!')
+    else:
+        add_error(line_num, 'Title syntax should be "[TITLE](LINK)"')
     # END Title
     # START Description
     # first character should be capitalized
@@ -109,7 +106,7 @@ def check_format(filename):
     appending to error list as needed
     """
     with open(filename) as fp:
-        lines = list(line.rstrip() for line in fp)
+        lines = [line.rstrip() for line in fp]
     check_alphabetical(lines)
     # START Check Entries
     num_in_category = min_entries_per_section + 1
@@ -120,8 +117,7 @@ def check_format(filename):
             title_links.append(section_title_re.match(line).group(1))
         # check each section for the minimum number of entries
         if line.startswith(anchor):
-            match = anchor_re.match(line)
-            if match:
+            if match := anchor_re.match(line):
                 if match.group(1) not in title_links:
                     add_error(line_num, "section header ({}) not added as a title link".format(match.group(1)))
             else:
